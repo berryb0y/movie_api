@@ -3,7 +3,7 @@ const http = require("http"),
     url = require('url');
 
 http.createServer((request, response) => {
-    let addr = parse.url,
+    let addr = request.url,
     q = url.parse(addr, true),
     filePath = '';
     // where we will store the file path
