@@ -16,5 +16,9 @@
   "bugs": {
     "url": "https://github.com/berryb0y/my-first-package/issues"
   },
-  "homepage": "https://github.com/berryb0y/my-first-package#readme"
+  "homepage": "https://github.com/berryb0y/my-first-package#readme",
+  "dependencies": {
+    "body-parser": "^1.20.0",
+    "express": "^4.17.3"
+  }
 }
