@@ -1,7 +1,18 @@
-const express = require('express');
+const express = require('express'),
+    morgan = require('morgan'),
+    fs = require('fs'),
+    path = require('path');
+
+
 const app = express();
+app.use(morgan('common'));
 
+// Logging stream
+const accessLogStream = fs.createWriteStream(path.join(__dirname, 'log.txt'), {
+    flags: 'a',
+});
 
+// first 10 marvel movies to come out in order
 let topMovies = [
     {
         title: 'Iron Man',
@@ -48,13 +59,29 @@ let topMovies = [
 // Get Requests
 
 app.get('/', (req, res) => {
-    res.send('"Its not about how much we lost; Its about how much we have left."-Tony Starl. AVENGERS:ENDGAME')
+    res.send('Its not about how much we lost; Its about how much we have left. -Tony Starl. AVENGERS:ENDGAME')
 });
 
 app.get('/documentation', (req, res) => {
-    res.sendFile('public/documentation.html', { root: __dirname});
+    res.sendFile(__dirname + 'public/documentation.html', { root: __dirname});
 });
 
 app.get('/movies', (req, res) => {
     res.json(topMovies);
 });
+
+app.listen(8080, () => {
+    console.log('Your app is listening on port 8080.');
+});
+
+
+
+// middleware -static, error handling,
+app.use(morgan('combined', {stream: accessLogStream}));
+app.use(express.static('public'));
+
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).send('something is broken here');
+});
+
