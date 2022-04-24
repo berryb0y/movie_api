@@ -70,9 +70,7 @@ app.get('/movies', (req, res) => {
     res.json(topMovies);
 });
 
-app.listen(8080, () => {
-    console.log('Your app is listening on port 8080.');
-});
+
 
 
 
@@ -85,3 +83,6 @@ app.use((err, req, res, next) => {
     res.status(500).send('something is broken here');
 });
 
+app.listen(8081, () => {
+    console.log('Your app is listening on port 8080.');
+});
