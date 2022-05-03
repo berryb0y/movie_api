@@ -4,141 +4,221 @@ const express = require('express'),
     uuid = require('uuid'),
     path = require('path');
 
+const mongoose = require('mongoose');
+const Models = require('./models');
+
+const Movies = Models.Movie;
+const Users = Models.User;
+
+mongoose.connect('mongodb://localhost:27017/myFlixDB', { useNewUrlParser: true, useUnifiedTopology: true});
 
 const app = express();
 app.use(morgan('common'));
-r;
 
 // Logging stream
 const accessLogStream = fs.createWriteStream(path.join(__dirname, 'log.txt'), {
     flags: 'a',
 });
 
-// users
-let users = [
-    {
-        id: 1,
-        name: 'Jake Bishop',
-        username: 'Bishop123',
-        password: 'Bishop321',
-        email: 'Bishop123@gmail.com',
-        birthday: '03/22/1999',
-        favorites: []
-    },
-    {
-        id: 2,
-        name: 'Bella Dome',
-        username: 'Bella123',
-        password: 'Bella321',
-        email: 'Bella123@gmail.com',
-        birthday: '10/03/1998',
-        favorites: []
-    }
-];
-
-// first 10 marvel movies to come out in order
-let topMovies = [
-    {
-        title: 'Iron Man',
-        director: 'Jon Favreau'
-    },
-    {
-        title: 'The Incredible Hulk',
-        director: 'Louis Leterrier'
-    },
-    {
-        title: 'Iron Man 2',
-        director: 'Jon Favreau'
-    },
-    {
-        title: 'Thor',
-        director: 'Kenneth Branagh'
-    },
-    {
-        title: 'Captain America: The First Avenger',
-        director: 'Joe Johnston'
-    },
-    {
-        title: 'The Avengers',
-        director: 'Joss Whedon'
-    },
-    {
-        title: 'Iron Man 3',
-        director: 'Shane Black'
-    },
-    {
-        title: 'Thor: The Dark World',
-        director: 'Alan Taylor'
-    },
-    {
-        title: 'Captain America: The Winter Soldier',
-        director: 'Anthony Russo, Joe Russo'
-    },
-    {
-        title: 'Gaurdians of the Galaxy',
-        director: 'James Gunn'
-    }
-];
-
 // Get Requests
 
 app.get('/', (req, res) => {
     res.send('Its not about how much we lost; Its about how much we have left. -Tony Stark. AVENGERS:ENDGAME')
 });
-    // view single user
-app.get('/profile/:username', (req, res) => {
-    users.findOne({ username: req.params.username})
+    // get single user
+app.get('/users/:Username', (req, res) => {
+    Users.findOne({ Username: req.params.Username})
         .then((user) => {
             res.json(user);
         })
-});    
+        .catch((err) => {
+            console.log(err);
+            res.status(500).send('Error: ' + err);
+        });
+});//Works!    
+
+    // get all users
+app.get('/users', (req, res) => {
+    Users.find()
+        .then((users) => {
+            res.status(201).json(users);
+        })
+        .catch((err) => {
+            console.error(err);
+            res.status(500).send('Error: ' + err);
+        });
+});//Works!    
+
     // returns documentation
 app.get('/documentation', (req, res) => {
     res.sendFile(__dirname + 'public/documentation.html', { root: __dirname});
 });
+
     // view all movies
 app.get('/movies', (req, res) => {
-    res.json(topMovies);
-});
+    Movies.find()
+        .then((movies) => {
+            res.status(201).json(movies);
+        })
+});//Works!
+
     // view single movie
-app.get('/movies/:name', (req, res) => {
-    res.send('Successful GET request returning data on a single movie');
-});
+app.get('/movies/:Title', (req, res) => {
+    Movies.findOne({ Title: req.params.Title })
+    .then((movie) => {
+        res.json(movie);
+    })
+    .catch((err) => {
+        console.log(err);
+        res.status(500).send('Error ' + err);
+    });
+});//Works!
+
+
+    // get favorites list
+app.get('/users/:username/movies', (req, res) => {
+    'pull up users favorites list' 
+}); //not necessary because it is already pulled with their user information
+
+
+
     // view single director
-app.get('/directors/:name', (req, res) => {
-    res.send('Successful GET request returning data on a single director');
-});
+app.get('/directors/:Name', (req, res) => {
+    Movies.findOne({ 'Director.Name': req.params.Name})
+    .then((movie) => {
+        if(movie) {
+            res.status(200).send(movie.Director.Bio);
+        } else {
+            res.status(400).send('Director not found.');
+        };
+    })
+    .catch((err) => {
+        console.log(err);
+        res.status(500).send('Error ' + err);
+    });
+});//Works!
+
+
     // view single genre
-app.get('/genres/:genre', (req, res) => {
-    res.send('Successful GET request returning data about a single genre');
-});
+app.get('/genre/:Name', (req, res) => {
+    Movies.findOne({ 'Genre.Name': req.params.Name })
+    .then((movie) => {
+        if(movie) { 
+            res.status(200).json(movie.Genre.Description);
+    } else{
+      res.status(400).send('Genre not found.');
+    };
+    })  
+    .catch((err) => {
+        console.error(err);
+        res.status(500).send('Error: ' + error);
+    });
+});//Works!
+
     // view single actor
-app.get('/actors/:name', (req, res) => {
+app.get('/actors/:Name', (req, res) => {
     res.send('Successful GET request returning data about a single actor');
-});
+}); //Will make in future
 
 // other requests
 
     // register page for users
-app.post('/register', (req, res) => {
-    res.send('Successful Post request returning data added for user');
-});
-    // favorites list
-app.put('/profile/:username/:favorites', (req, res) => {
-    'pull up users favorites list'
-});
+app.post('/users', (req, res) => {
+    Users.findOne({ Username: req.body.Username })
+    .then((user) => {
+        if (user) {
+            return res.status(400).send(req.body.Username + ' already exists');
+        } else {
+            Users
+                .create({
+                    Username: req.body.Username,
+                    Password: req.body.Password,
+                    Email: req.body.Email,
+                    Birthday: req.body.Birthday
+                })
+                .then((user) =>{res.status(201).json(user) })
+            .catch((error) => {
+                console.error(error);
+                res.status(500).send('Error: ' + error);
+            })
+        }
+    })
+    .catch((error) => {
+        console.error(error);
+        res.status(500).send('Error: ' + error);
+    });
+});// does not work yet
+
+
+
+    // add one to favorites list
+app.post('/users/:Username/movies/:MovieID', (req, res) => {
+    Users.findOneAndUpdate({ Username: req.params.Username }, {
+        $push: { FavoriteMovies: req.params.MovieID }
+    },
+    { new: true },
+    (err, updatedUser) => {
+        if (err) {
+            console.log(err);
+            res.status(500).send('Error: ' + err);
+        } else {
+            res.json(updatedUser);
+        }
+    });
+}); //Works!
+
     // allow user to remove favorite
-app.delete('/profile/:username/:favorites', (req, res) => {
-    'function to delete favorite'
-})
+app.delete('/users/:Username/movies/:MovieID', (req, res) => {
+    Users.findOneAndUpdate({ Username: req.params.Username },
+    { $pull: {FavoriteMovies: req.params.MovieID }},
+    { new: true },
+    (err, updatedUser) => {
+        if (err) {
+            console.error(err);
+            res.status(500).send("Error " + err);
+        } else {
+            res.status(200).json(updatedUser);
+        }
+    });
+});//Works!
+
     // allow user to delete profile
-app.delete('/profile/:username', (req, res) => {
-    'function for user to delete profile.'
-})
+app.delete('/users/:Username', (req, res) => {
+    Users.findOneAndRemove({ Username: req.params.Username})
+    .then ((user) => {
+        if (!user) {
+            res.status(400).send(req.params.Username + ' was not found.');
+        } else {
+            res.status(200).send(req.params.Username + ' was deleted.'); 
+        }
+    })
+    .catch((err) => {
+        console.log(err);
+        res.status(500).send('Error: ' + err);
+    });
+}); //needs to be tested
+
+
     // allow users to update profile
-app.put('/profile/:username', (req, res) => {
-    res.put('Successfully updated data on profile');
-});
+app.put('/profile/:Username', (req, res) => {
+    Users.findOneAndUpdate({ Username: req.params.Username}, { $set:
+        {
+            Username: req.body.Username,
+            Password: req.body.Password,
+            Email: req.body.Email,
+            Birthday: req.body.Birthday
+        }
+    },
+    { new: true},
+    (err, updatedUser) => {
+        if(err) {
+            console.error(err);
+            res.status(500).send('Error: ' + err);
+        } else {
+            res.json(updatedUser);
+        }
+    });
+});// does not work
 
 
 // middleware -static, error handling,
