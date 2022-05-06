@@ -2,6 +2,7 @@ const express = require('express'),
     morgan = require('morgan'),
     fs = require('fs'),
     uuid = require('uuid'),
+    bodyParser = require('body-parser'),
     path = require('path');
 
 const mongoose = require('mongoose');
@@ -15,6 +16,16 @@ mongoose.connect('mongodb://localhost:27017/myFlixDB', { useNewUrlParser: true, 
 const app = express();
 app.use(morgan('common'));
 
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+// middleware
+let auth = require('./auth')(app);
+
+const passport = require('passport');
+require('./passport');
+
+
 // Logging stream
 const accessLogStream = fs.createWriteStream(path.join(__dirname, 'log.txt'), {
     flags: 'a',
@@ -22,11 +33,11 @@ const accessLogStream = fs.createWriteStream(path.join(__dirname, 'log.txt'), {
 
 // Get Requests
 
-app.get('/', (req, res) => {
+app.get('/', passport.authenticate('jwt', { session: false }), (req, res) => {
     res.send('Its not about how much we lost; Its about how much we have left. -Tony Stark. AVENGERS:ENDGAME')
 });
     // get single user
-app.get('/users/:Username', (req, res) => {
+app.get('/users/:Username', passport.authenticate('jwt', { session: false }), (req, res) => {
     Users.findOne({ Username: req.params.Username})
         .then((user) => {
             res.json(user);
@@ -38,7 +49,7 @@ app.get('/users/:Username', (req, res) => {
 });//Works!    
 
     // get all users
-app.get('/users', (req, res) => {
+app.get('/users', passport.authenticate('jwt', { session: false }), (req, res) => {
     Users.find()
         .then((users) => {
             res.status(201).json(users);
@@ -50,20 +61,20 @@ app.get('/users', (req, res) => {
 });//Works!    
 
     // returns documentation
-app.get('/documentation', (req, res) => {
+app.get('/documentation', passport.authenticate('jwt', { session: false }), (req, res) => {
     res.sendFile(__dirname + 'public/documentation.html', { root: __dirname});
 });
 
-    // view all movies
-app.get('/movies', (req, res) => {
+    // Get all movies
+app.get('/movies', passport.authenticate('jwt', { session: false }), (req, res) => {
     Movies.find()
         .then((movies) => {
             res.status(201).json(movies);
         })
 });//Works!
 
-    // view single movie
-app.get('/movies/:Title', (req, res) => {
+    // Get single movie
+app.get('/movies/:Title', passport.authenticate('jwt', { session: false }), (req, res) => {
     Movies.findOne({ Title: req.params.Title })
     .then((movie) => {
         res.json(movie);
@@ -76,14 +87,14 @@ app.get('/movies/:Title', (req, res) => {
 
 
     // get favorites list
-app.get('/users/:username/movies', (req, res) => {
+app.get('/users/:username/movies', passport.authenticate('jwt', { session: false }), (req, res) => {
     'pull up users favorites list' 
 }); //not necessary because it is already pulled with their user information
 
 
 
-    // view single director
-app.get('/directors/:Name', (req, res) => {
+    // Get single director
+app.get('/directors/:Name', passport.authenticate('jwt', { session: false }), (req, res) => {
     Movies.findOne({ 'Director.Name': req.params.Name})
     .then((movie) => {
         if(movie) {
@@ -99,8 +110,8 @@ app.get('/directors/:Name', (req, res) => {
 });//Works!
 
 
-    // view single genre
-app.get('/genre/:Name', (req, res) => {
+    // Get single genre
+app.get('/genre/:Name', passport.authenticate('jwt', { session: false }), (req, res) => {
     Movies.findOne({ 'Genre.Name': req.params.Name })
     .then((movie) => {
         if(movie) { 
@@ -115,8 +126,8 @@ app.get('/genre/:Name', (req, res) => {
     });
 });//Works!
 
-    // view single actor
-app.get('/actors/:Name', (req, res) => {
+    // Get single actor
+app.get('/actors/:Name', passport.authenticate('jwt', { session: false }), (req, res) => {
     res.send('Successful GET request returning data about a single actor');
 }); //Will make in future
 
@@ -146,12 +157,12 @@ app.post('/users', (req, res) => {
         console.error(error);
         res.status(500).send('Error: ' + error);
     });
-});// does not work yet
+});//Works!
 
 
 
     // add one to favorites list
-app.post('/users/:Username/movies/:MovieID', (req, res) => {
+app.post('/users/:Username/movies/:MovieID', passport.authenticate('jwt', { session: false }), (req, res) => {
     Users.findOneAndUpdate({ Username: req.params.Username }, {
         $push: { FavoriteMovies: req.params.MovieID }
     },
@@ -167,7 +178,7 @@ app.post('/users/:Username/movies/:MovieID', (req, res) => {
 }); //Works!
 
     // allow user to remove favorite
-app.delete('/users/:Username/movies/:MovieID', (req, res) => {
+app.delete('/users/:Username/movies/:MovieID', passport.authenticate('jwt', { session: false }), (req, res) => {
     Users.findOneAndUpdate({ Username: req.params.Username },
     { $pull: {FavoriteMovies: req.params.MovieID }},
     { new: true },
@@ -182,7 +193,7 @@ app.delete('/users/:Username/movies/:MovieID', (req, res) => {
 });//Works!
 
     // allow user to delete profile
-app.delete('/users/:Username', (req, res) => {
+app.delete('/users/:Username', passport.authenticate('jwt', { session: false }), (req, res) => {
     Users.findOneAndRemove({ Username: req.params.Username})
     .then ((user) => {
         if (!user) {
@@ -195,11 +206,11 @@ app.delete('/users/:Username', (req, res) => {
         console.log(err);
         res.status(500).send('Error: ' + err);
     });
-}); //Works!
+}); //works!
 
 
     // allow users to update profile
-app.put('/users/:Username', (req, res) => {
+app.put('/users/:Username', passport.authenticate('jwt', { session: false }), (req, res) => {
     Users.findOneAndUpdate({ Username: req.params.Username}, { $set:
         {
             Username: req.body.Username,
@@ -217,12 +228,14 @@ app.put('/users/:Username', (req, res) => {
             res.json(updatedUser);
         }
     });
-});// does not work
+});//Works!
 
 
 // middleware -static, error handling,
 app.use(morgan('combined', {stream: accessLogStream}));
 app.use(express.static('public'));
+app.use(bodyParser.urlencoded({ extended: true }));
+
 
 app.use((err, req, res, next) => {
     console.error(err.stack);
