@@ -13,11 +13,26 @@ const Users = Models.User;
 
 mongoose.connect('mongodb://localhost:27017/myFlixDB', { useNewUrlParser: true, useUnifiedTopology: true});
 
+const { check, validationResult } = require('express-validator');
+
 const app = express();
 app.use(morgan('common'));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+const cors = require('cors');
+let allowedOrigins = ['http://localhost:8080', 'http://testsite.com'];
+app.use(cors({
+    origin: (origin, callback) => {
+        if(!origin) return callback(null, true);
+        if(allowedOrigins.indexOf(origin) === -1){
+            let message = 'The CORS policy for this application does not allow access from origin ' + origin;
+            return callback(new Error(message ), false);
+        }
+        return callback(null, true);
+    }
+}));
 
 // middleware
 let auth = require('./auth')(app);
@@ -134,7 +149,22 @@ app.get('/actors/:Name', passport.authenticate('jwt', { session: false }), (req,
 // other requests
 
     // register page for users
-app.post('/users', (req, res) => {
+app.post('/users',
+  [
+    //validation logic
+    check('Username', 'Username is required').isLength({min: 5}),
+    check('Username', 'Username contains non alphanumeric characters - not allowed.').isAlphanumeric(),
+    check('Password', 'Password is required').not().isEmpty(),
+    check('Email', 'Email does not appear to be valid').isEmail()
+  ], (req, res) => {
+    // check validation object for errors
+    let errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        return res.status(422).json({errors: errors.array() });
+    }
+
+    let hashedPassword = Users.hashPassword(req.body.Password);
     Users.findOne({ Username: req.body.Username })
     .then((user) => {
         if (user) {
@@ -142,15 +172,15 @@ app.post('/users', (req, res) => {
         } else {
             Users.create({
                     Username: req.body.Username,
-                    Password: req.body.Password,
+                    Password: hashedPassword,
                     Email: req.body.Email,
                     Birthday: req.body.Birthday
                 })
-                .then((user) =>{res.status(201).json(user) })
+                .then((user) => { res.status(201).json(user) })
             .catch((error) => {
                 console.error(error);
                 res.status(500).send('Error: ' + error);
-            })
+            });
         }
     })
     .catch((error) => {
@@ -210,11 +240,26 @@ app.delete('/users/:Username', passport.authenticate('jwt', { session: false }),
 
 
     // allow users to update profile
-app.put('/users/:Username', passport.authenticate('jwt', { session: false }), (req, res) => {
+app.put('/users/:Username', passport.authenticate('jwt', { session: false }), 
+  [
+    //validation logic
+    check('Username', 'Username is required').isLength({min: 5}),
+    check('Username', 'Username contains non alphanumeric characters - not allowed.').isAlphanumeric(),
+    check('Password', 'Password is required').not().isEmpty(),
+    check('Email', 'Email does not appear to be valid').isEmail()
+  ], (req, res) => {
+          // check validation object for errors
+    let errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        return res.status(422).json({errors: errors.array() });
+    }
+
+    let hashedPassword = Users.hashPassword(req.body.Password);
     Users.findOneAndUpdate({ Username: req.params.Username}, { $set:
         {
             Username: req.body.Username,
-            Password: req.body.Password,
+            Password: hashedPassword,
             Email: req.body.Email,
             Birthday: req.body.Birthday
         }
@@ -242,6 +287,10 @@ app.use((err, req, res, next) => {
     res.status(500).send('something is broken here');
 });
 
-app.listen(8080, () => {
-    console.log('Your app is listening on port 8080.');
+// app.listen(8080, () => {
+//     console.log('Your app is listening on port 8080.');
+// });
+const port = process.env.PORT || 8080;
+app.listen(port, '0.0.0.0',() => {
+ console.log('Listening on Port ' + port);
 });
