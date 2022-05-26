@@ -90,7 +90,7 @@ app.get('/movies', function (req, res) {
             res.status(201).json(movies);
         })
 });//Works!
-
+console.log('hi');
     // Get single movie
 app.get('/movies/:Title', passport.authenticate('jwt', { session: false }), (req, res) => {
     Movies.findOne({ Title: req.params.Title })
