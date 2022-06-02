@@ -6,6 +6,16 @@ const express = require('express'),
     path = require('path');
 require('dotenv').config()
 
+const cors=require("cors");
+const corsOptions ={
+   origin:'*', 
+   credentials:true,            //access-control-allow-credentials:true
+   optionSuccessStatus:200,
+}
+
+
+
+
 const mongoose = require('mongoose');
 const Models = require('./models');
 
@@ -21,21 +31,23 @@ const { check, validationResult } = require('express-validator');
 const app = express();
 app.use(morgan('common'));
 
+app.use(cors(corsOptions))
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-const cors = require('cors');
-let allowedOrigins = ['http://localhost:8080', 'http://testsite.com', 'http://localhost:1234', 'localhost:1234'];
-app.use(cors({
-    origin: (origin, callback) => {
-        if(!origin) return callback(null, true);
-        if(allowedOrigins.indexOf(origin) === -1){
-            let message = 'The CORS policy for this application does not allow access from origin ' + origin;
-            return callback(new Error(message ), false);
-        }
-        return callback(null, true);
-    }
-}));
+// const cors = require('cors');
+// let allowedOrigins = ['http://localhost:8080', 'http://testsite.com', 'http://localhost:1234', 'localhost:1234'];
+// app.use(cors({
+//     origin: (origin, callback) => {
+//         if(!origin) return callback(null, true);
+//         if(allowedOrigins.indexOf(origin) === -1){
+//             let message = 'The CORS policy for this application does not allow access from origin ' + origin;
+//             return callback(new Error(message ), false);
+//         }
+//         return callback(null, true);
+//     }
+// }));
 
 // middleware
 let auth = require('./auth')(app);
