@@ -6,6 +6,7 @@ const express = require('express'),
     path = require('path');
 require('dotenv').config()
 
+//setting allowed request origins
 const cors=require("cors");
 const corsOptions ={
    origin:'*', 
@@ -16,7 +17,7 @@ const corsOptions ={
 
 
 
-
+//mongoose models
 const mongoose = require('mongoose');
 const Models = require('./models');
 
