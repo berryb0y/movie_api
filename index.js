@@ -134,7 +134,7 @@ app.get('/users/:Username/movies', passport.authenticate('jwt', { session: false
         res.status(500).send('Error: ' + err);
       });
   }
-);//not necessary because it is already pulled with their user information
+);
 
 
 
