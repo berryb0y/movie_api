@@ -119,9 +119,22 @@ app.get('/movies/:Title', passport.authenticate('jwt', { session: false }), (req
 
 
     // get favorites list
-app.get('/users/:username/movies', passport.authenticate('jwt', { session: false }), (req, res) => {
-    'pull up users favorites list' 
-}); //not necessary because it is already pulled with their user information
+app.get('/users/:Username/movies', passport.authenticate('jwt', { session: false }), (req, res) => {
+    Users.findOne({ Username: req.params.Username })
+      .then((user) => {
+        if (user) {
+          // If a user with the corresponding username was found, return user info
+          res.status(200).json(user.FavoriteMovies);
+        } else {
+          res.status(400).send('Could not find favorite movies for this user');
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+        res.status(500).send('Error: ' + err);
+      });
+  }
+);//not necessary because it is already pulled with their user information
 
 
 
